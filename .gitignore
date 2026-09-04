@@ -28,3 +28,8 @@ desktop.ini
 
 # 个人面试备稿，不公开
 INTERVIEW.md
+
+# 视频：只有 docs/demo.mp4 入库，其它 mp4/mov 一律忽略，防止误加大文件
+*.mp4
+*.mov
+!docs/demo.mp4

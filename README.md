@@ -4,6 +4,10 @@
 
 音乐数据来自本地运行的第三方接口项目 [NeteaseCloudMusicApi-enhanced](https://neteasecloudmusicapienhanced.js.org/)，本项目不存储、不分发任何音频。
 
+## 演示
+
+▶ **[2 分 16 秒演示视频](docs/demo.mp4)** —— 点开可直接在 GitHub 内播放（1280×720，7 MB）。
+
 ## 特性
 
 **播放**
