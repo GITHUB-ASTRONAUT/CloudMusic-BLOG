@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>紫听歌嘞 · Purple Music</title>
+<link rel="stylesheet" href="/src/styles/base.css">
+<link rel="stylesheet" href="/src/styles/components.css">
+<link rel="stylesheet" href="/src/styles/player.css">
+</head>
+<body>
+<div class="app">
+  <aside class="rail">
+    <div class="rail-head">
+      <button class="icon-btn rail-toggle" id="railToggle" title="收起为图标" aria-label="收起为图标" aria-pressed="false"><i data-ico="sidebar"></i></button>
+      <a class="brand" id="brandHome" href="#/discover" title="回到首页并刷新">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="brand-text">紫听歌嘞<small>Purple Music</small></span>
+      </a>
+    </div>
+    <nav class="rail-nav" id="railNav" aria-label="主导航">
+      <a class="rail-link" href="#/discover" title="发现"><i data-ico="compass"></i><span>发现</span></a>
+      <a class="rail-link" href="#/toplist" title="排行榜"><i data-ico="chart"></i><span>排行榜</span></a>
+      <a class="rail-link" href="#/daily" title="每日推荐"><i data-ico="sparkle"></i><span>每日推荐</span></a>
+      <a class="rail-link" href="#/mine" title="我的歌单"><i data-ico="library"></i><span>我的歌单</span></a>
+      <a class="rail-link" href="#/queue" title="播放队列"><i data-ico="queue"></i><span>播放队列</span></a>
+    </nav>
+    <div class="rail-foot">
+      <div class="rail-hint" id="railHint">
+        <button class="rail-hint-x" id="railHintClose" title="收起提示" aria-label="收起这个提示"><i data-ico="close"></i></button>
+        <strong>评论侦探</strong>
+        打开任意歌曲，即可翻查某位用户在这首歌下留下的每一条评论，对方隐藏了历史评论也照样查得到。
+      </div>
+      <button class="rail-hint-peek" id="railHintOpen" hidden><i data-ico="detective"></i>什么是评论侦探？</button>
+    </div>
+  </aside>
+  <div class="stage">
+    <div class="ambient" aria-hidden="true">
+      <div class="ambient-blob blob-a"></div>
+      <div class="ambient-blob blob-b"></div>
+      <div class="ambient-blob blob-c"></div>
+      <div class="ambient-grain"></div>
+    </div>
+    <header class="topbar">
+      <div class="topbar-lead">
+        <button class="icon-btn" id="navBack" title="后退" aria-label="后退"><i data-ico="back"></i></button>
+      </div>
+      <form class="omni" id="searchForm" role="search" autocomplete="off">
+        <i data-ico="search" class="omni-ico"></i>
+        <input id="searchInput" type="search" placeholder="搜索歌曲、歌单、用户…" aria-label="搜索">
+        <button type="submit" class="omni-go">搜索</button>
+        <div class="omni-panel" id="omniPanel" hidden></div>
+      </form>
+      <div class="account" id="accountSlot"></div>
+    </header>
+    <main class="view" id="view" tabindex="-1"></main>
+  </div>
+</div>
+<footer class="playbar" id="playbar" data-empty="true">
+  <div class="pb-track">
+    <button class="pb-cover" id="pbCover" title="展开播放页" aria-label="展开播放页">
+      <img alt="" id="pbCoverImg">
+      <span class="pb-cover-up"><i data-ico="chevron-up"></i></span>
+    </button>
+    <div class="pb-meta">
+      <a class="pb-name" id="pbName" href="#/discover">还没有在播放</a>
+      <span class="pb-artist" id="pbArtist">选一首歌开始吧</span>
+    </div>
+    <button class="icon-btn pb-like" id="pbLike" title="喜欢" aria-label="喜欢"><i data-ico="heart"></i></button>
+  </div>
+  <div class="pb-center">
+    <div class="pb-controls">
+      <button class="icon-btn" id="pbMode" title="播放模式：列表 / 单曲 / 随机 / 心动" aria-label="播放模式"><i data-ico="repeat"></i></button>
+      <button class="icon-btn" id="pbPrev" title="上一首" aria-label="上一首"><i data-ico="prev"></i></button>
+      <button class="play-btn" id="pbPlay" title="播放 / 暂停" aria-label="播放或暂停"><i data-ico="play"></i></button>
+      <button class="icon-btn" id="pbNext" title="下一首" aria-label="下一首"><i data-ico="next"></i></button>
+      <button class="icon-btn" id="pbLyric" title="歌词" aria-label="歌词"><i data-ico="quote"></i></button>
+    </div>
+    <div class="pb-scrub">
+      <span class="pb-time" id="pbNow">0:00</span>
+      <div class="scrub" id="pbScrub" role="slider" aria-label="播放进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" tabindex="0">
+        <div class="scrub-buffer" id="pbBuffer"></div>
+        <div class="scrub-fill" id="pbFill"><span class="scrub-knob"></span></div>
+      </div>
+      <span class="pb-time" id="pbTotal">0:00</span>
+    </div>
+  </div>
+  <div class="pb-right">
+    <button type="button" class="picker picker-level" id="pbLevel" title="音质" aria-label="音质" aria-haspopup="menu"><span data-picker-label>极高</span><i data-ico="chevron-down"></i></button>
+    <button class="icon-btn" id="pbMute" title="静音" aria-label="静音"><i data-ico="volume"></i></button>
+    <div class="scrub scrub-vol" id="pbVol" role="slider" aria-label="音量" aria-valuemin="0" aria-valuemax="100" aria-valuenow="80" tabindex="0">
+      <div class="scrub-fill" id="pbVolFill"><span class="scrub-knob"></span></div>
+    </div>
+    <button class="icon-btn" id="pbQueue" title="播放队列" aria-label="播放队列"><i data-ico="queue"></i></button>
+  </div>
+</footer>
+<section class="nowplaying" id="nowPlaying" hidden aria-label="播放页">
+  <div class="np-bg" id="npBg" aria-hidden="true"></div>
+  <div class="np-top">
+    <button class="icon-btn" id="npClose" title="收起" aria-label="收起"><i data-ico="chevron-down"></i></button>
+    <button class="icon-btn" id="npImmersive" title="隐藏播放栏" aria-label="隐藏播放栏" aria-pressed="false"><i data-ico="immersive"></i></button>
+  </div>
+  <div class="np-inner">
+    <div class="np-left">
+      <div class="np-stage">
+        <div class="np-halo" id="npHalo" aria-hidden="true"></div>
+        <div class="vinyl" id="npVinyl">
+          <span class="vinyl-label" aria-hidden="true"></span>
+          <img alt="" id="npCover">
+        </div>
+        <span class="np-arm" aria-hidden="true"><b></b></span>
+      </div>
+      <div class="np-title">
+        <h2 id="npName">—</h2>
+        <p id="npArtist"></p>
+        <p class="np-album" id="npAlbum"></p>
+      </div>
+      <div class="np-chips" id="npChips"></div>
+      <div class="np-actions">
+        <button class="icon-btn" id="npLike" title="喜欢" aria-label="喜欢"><i data-ico="heart"></i></button>
+        <a class="btn btn-sm" id="npSongLink" href="#/discover"><i data-ico="comment"></i>评论与侦探</a>
+        <a class="btn btn-sm btn-ghost" id="npAlbumLink" href="#/discover"><i data-ico="library"></i>专辑</a>
+      </div>
+    </div>
+    <div class="np-right">
+      <div class="np-lyric-head">
+        <span class="eyebrow" id="npLyricKind">歌词</span>
+        <div class="np-lyric-tools">
+          <button class="icon-btn is-text" id="npLyricSmaller" title="字号减小" aria-label="字号减小">A-</button>
+          <span class="np-lyric-size" id="npLyricSize">中</span>
+          <button class="icon-btn is-text" id="npLyricBigger" title="字号增大" aria-label="字号增大">A+</button>
+          <button class="icon-btn" id="npLyricStyle" title="字体与样式" aria-label="字体与样式" aria-haspopup="menu"><i data-ico="sliders"></i></button>
+          <button class="icon-btn" id="npLyricCenter" title="回到当前句" aria-label="回到当前句"><i data-ico="target"></i></button>
+        </div>
+      </div>
+      <div class="lyric-scroll" id="npLyric"></div>
+    </div>
+  </div>
+</section>
+<div class="toasts" id="toasts" role="status" aria-live="polite"></div>
+<div class="modal-root" id="modalRoot" hidden></div>
+<audio id="audio" preload="metadata"></audio>
+<script type="module" src="/src/app.mjs"></script>
+</body>
+</html>

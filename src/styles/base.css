@@ -1,0 +1,593 @@
+:root {
+  --accent-h: 268;
+  --accent-s: 72%;
+  --accent-l: 62%;
+  --accent: hsl(var(--accent-h) var(--accent-s) var(--accent-l));
+  --accent-soft: hsl(var(--accent-h) var(--accent-s) var(--accent-l) / 0.16);
+  --accent-line: hsl(var(--accent-h) var(--accent-s) var(--accent-l) / 0.38);
+  --bg: hsl(var(--accent-h) 24% 6%);
+  --bg-deep: hsl(var(--accent-h) 30% 4%);
+  --panel: hsl(var(--accent-h) 20% 100% / 0.045);
+  --panel-strong: hsl(var(--accent-h) 20% 100% / 0.075);
+  --line: hsl(0 0% 100% / 0.09);
+  --line-soft: hsl(0 0% 100% / 0.055);
+  --ink: hsl(var(--accent-h) 18% 96%);
+  --ink-dim: hsl(var(--accent-h) 12% 74%);
+  --ink-faint: hsl(var(--accent-h) 10% 54%);
+  --danger: hsl(354 78% 64%);
+  --ok: hsl(152 62% 50%);
+  --radius: 18px;
+  --radius-sm: 12px;
+  --playbar-h: 92px;
+  --rail-track: 244px;
+  --rail-w: 244px;
+  /* How far the stage slides when the rail shrinks. Derived, so the two widths
+     can never drift apart. */
+  --rail-shift: calc(var(--rail-w) - var(--rail-track));
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+/* Author `display` rules outrank the UA stylesheet's [hidden] rule, so make
+   the hidden attribute authoritative for every component in this app. */
+[hidden] { display: none !important; }
+
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg-deep);
+  color: var(--ink);
+  font: 15px/1.6 "Inter", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 { margin: 0; font-weight: 650; letter-spacing: -0.015em; line-height: 1.25; }
+p { margin: 0; }
+a { color: inherit; text-decoration: none; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { background: none; border: 0; cursor: pointer; }
+img { display: block; max-width: 100%; }
+ul, ol { margin: 0; padding: 0; list-style: none; }
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+::selection { background: var(--accent-line); }
+
+i.ico {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+
+i.ico svg { display: block; }
+
+/* ---------- ambient background ---------- */
+
+/* Lives inside .stage, so the purple glow is the content surface and everything
+   around it — rail, the frame under the rounded corners, the strip behind the
+   playbar — stays flat near-black chrome. */
+.ambient {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 90% at 12% 0%, hsl(var(--accent-h) 42% 14%) 0%, transparent 60%),
+    radial-gradient(100% 80% at 100% 100%, hsl(calc(var(--accent-h) + 48) 40% 12%) 0%, transparent 62%),
+    var(--bg-deep);
+  transition: background 1.2s var(--ease);
+}
+
+.ambient-blob {
+  position: absolute;
+  width: 52vw;
+  height: 52vw;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.5;
+  transition: background 1.4s var(--ease);
+  will-change: transform;
+}
+
+/* The blobs are 52vw wide with a 90px blur; leaving them animating during the
+   collapse means the compositor re-rasterises them alongside it. */
+html.rail-animating .ambient-blob { animation-play-state: paused; }
+
+.blob-a {
+  top: -18vw; left: -8vw;
+  background: hsl(var(--accent-h) var(--accent-s) 42% / 0.55);
+  animation: drift-a 26s var(--ease) infinite alternate;
+}
+
+.blob-b {
+  right: -14vw; top: 22vh;
+  background: hsl(calc(var(--accent-h) + 56) 66% 44% / 0.42);
+  animation: drift-b 32s var(--ease) infinite alternate;
+}
+
+.blob-c {
+  left: 26vw; bottom: -26vw;
+  background: hsl(calc(var(--accent-h) - 44) 60% 40% / 0.36);
+  animation: drift-c 38s var(--ease) infinite alternate;
+}
+
+@keyframes drift-a { to { transform: translate3d(9vw, 7vh, 0) scale(1.14); } }
+@keyframes drift-b { to { transform: translate3d(-11vw, -9vh, 0) scale(0.88); } }
+@keyframes drift-c { to { transform: translate3d(6vw, -12vh, 0) scale(1.2); } }
+
+.ambient-grain {
+  position: absolute;
+  inset: 0;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ambient-blob { animation: none; }
+  * { scroll-behavior: auto !important; }
+}
+
+/* ---------- shell ---------- */
+
+/* Two columns, no masthead: the rail carries the brand in its own header
+   compartment so collapsing it never moves the wordmark. */
+.app {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  /* The track never animates. Animating grid-template-columns forces a full
+     layout + paint of every card on every frame, which is what made collapsing
+     the rail feel like it stuttered. */
+  grid-template-columns: var(--rail-track) minmax(0, 1fr);
+  /* Without an explicit clamped row the auto row grows to content height,
+     .view never becomes a scroller, and body[overflow:hidden] eats the rest. */
+  grid-template-rows: minmax(0, 1fr);
+  height: 100vh;
+  min-height: 0;
+  padding-bottom: var(--playbar-h);
+  /* The chrome tone. Anything not covered by the content panel — the frame
+     around its rounded corners included — reads as one dark surface. */
+  background: var(--bg-deep);
+  /* Clips the stage while it is deliberately wider than its track mid-slide. */
+  overflow: hidden;
+}
+
+.rail {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 18px 14px;
+  /* No backdrop-filter here on purpose: re-blurring the backdrop on every frame
+     of the collapse animation is what made the rail feel like it stuttered. */
+  background: linear-gradient(180deg, hsl(var(--accent-h) 24% 9% / 0.72), hsl(var(--accent-h) 26% 6% / 0.55));
+  /* Horizontal clipping matters once --rail-w collapses. */
+  overflow: hidden auto;
+  width: var(--rail-w);
+  transition: width 0.26s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* The brand sits in its own fenced-off compartment at the top of the rail, so
+   the logo never moves and the divider reads as a proper header. */
+.rail-head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.rail-head .brand { flex: 1 1 auto; min-width: 0; }
+/* Nudges the toggle's glyph onto the same 37px axis as the nav icons below
+   (rail padding 14 + link padding 14 + half of an 18px glyph). */
+.rail-head .rail-toggle { margin-left: 6px; }
+
+html.rail-mini { --rail-w: 74px; }
+
+/* Icon mode stacks the compartment so the toggle, the logo mark and every nav
+   icon below share one vertical axis. */
+html.rail-mini .rail-head {
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 14px;
+}
+html.rail-mini .rail-head .brand { flex: none; padding: 0; justify-content: center; }
+html.rail-mini .rail-head .rail-toggle { margin-left: 0; }
+html.rail-mini .brand-text { display: none; }
+
+/* Collapsing: widen first (one reflow, still hidden behind the rail), then
+   slide. Expanding uses the base rule and defers the narrowing to the end. */
+html.rail-mini .stage { transition: transform 0.26s cubic-bezier(0.32, 0.72, 0, 1), width 0s linear 0s; }
+
+html.rail-mini .rail { padding: 18px 11px; }
+
+html.rail-mini .rail-link {
+  justify-content: center;
+  gap: 0;
+  padding: 12px 0;
+}
+
+html.rail-mini .rail-link span { display: none; }
+html.rail-mini .rail-link i { width: 20px; height: 20px; }
+
+/* The detective tip needs prose width; there is none left in icon mode. */
+html.rail-mini .rail-foot { display: none; }
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  color: inherit;
+  cursor: pointer;
+  transition: background 0.18s var(--ease), transform 0.18s var(--ease);
+}
+.brand:hover { background: hsl(0 0% 100% / 0.05); }
+.brand:active { transform: scale(0.985); }
+.brand:hover .brand-mark { box-shadow: 0 8px 26px hsl(var(--accent-h) 70% 45% / 0.7); }
+
+.brand-mark {
+  width: 30px; height: 30px;
+  border-radius: 10px;
+  background: linear-gradient(145deg, var(--accent), hsl(calc(var(--accent-h) + 52) 80% 58%));
+  box-shadow: 0 6px 20px hsl(var(--accent-h) 70% 40% / 0.5);
+  position: relative;
+  flex: none;
+  transition: box-shadow 0.22s var(--ease);
+}
+
+.brand-mark::after {
+  content: "";
+  position: absolute;
+  inset: 11px;
+  border-radius: 50%;
+  background: var(--bg-deep);
+}
+
+.brand-text { font-size: 17px; font-weight: 700; letter-spacing: 0.06em; display: flex; flex-direction: column; }
+.brand-text small { font-size: 10px; font-weight: 500; letter-spacing: 0.22em; color: var(--ink-faint); text-transform: uppercase; }
+
+.rail-nav { display: flex; flex-direction: column; gap: 3px; }
+
+.rail-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  color: var(--ink-dim);
+  font-weight: 550;
+  position: relative;
+  transition: background 0.18s var(--ease), color 0.18s var(--ease);
+}
+
+.rail-link:hover { background: var(--panel); color: var(--ink); }
+
+.rail-link[aria-current="page"] {
+  background: var(--accent-soft);
+  color: var(--ink);
+}
+
+.rail-link[aria-current="page"]::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 50%;
+  width: 3px; height: 18px;
+  border-radius: 0 3px 3px 0;
+  background: var(--accent);
+  transform: translateY(-50%);
+}
+
+.rail-link i { width: 18px; height: 18px; flex: none; }
+
+.rail-foot { margin-top: auto; }
+
+.rail-hint {
+  position: relative;
+  padding: 14px 32px 14px 14px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  font-size: 12.5px;
+  line-height: 1.65;
+  color: var(--ink-faint);
+}
+
+.rail-hint strong { display: block; color: var(--ink); font-size: 13px; margin-bottom: 4px; }
+
+.rail-hint-x {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: grid;
+  place-items: center;
+  width: 22px; height: 22px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink-faint);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.18s var(--ease), background 0.18s var(--ease), color 0.18s var(--ease);
+}
+.rail-hint-x svg { width: 13px; height: 13px; }
+.rail-hint:hover .rail-hint-x,
+.rail-hint-x:focus-visible { opacity: 1; }
+.rail-hint-x:hover { background: hsl(0 0% 100% / 0.08); color: var(--ink); }
+
+.rail-hint-peek {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px dashed var(--line-soft);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink-faint);
+  font: inherit;
+  font-size: 12.5px;
+  text-align: left;
+  cursor: pointer;
+  transition: color 0.18s var(--ease), border-color 0.18s var(--ease), background 0.18s var(--ease);
+}
+.rail-hint-peek svg { width: 15px; height: 15px; flex: none; }
+.rail-hint-peek:hover { color: var(--ink); border-color: var(--line); background: hsl(0 0% 100% / 0.04); }
+
+/* ---------- stage / topbar ---------- */
+
+/* The stage keeps a stable layout width and simply slides left to meet the
+   shrunken rail, then widens to fill the reclaimed gutter. The width flip is a
+   single reflow scheduled at the far end of the slide (see the mini rule for
+   the collapsing direction), so mid-animation there is only a GPU transform. */
+.stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  /* Rounded seam where the content panel meets the rail. overflow:hidden is what
+     makes the radius actually clip the header and the scroller inside. With the
+     header no longer painting a dark band, the curve has to read from the edge
+     itself: a brighter hairline, an inner highlight tracing it, and a drop
+     shadow that lifts the whole panel off the rail. */
+  border-left: 1px solid var(--line);
+  border-radius: 22px 0 0 22px;
+  /* A corner flush against the viewport edge only ever shows a quarter of its
+     arc. Insetting the panel top and bottom lets both curves read in full. */
+  margin: 12px 0;
+  overflow: hidden;
+  box-shadow:
+    inset 1px 0 0 hsl(0 0% 100% / 0.06),
+    -20px 0 44px hsl(var(--accent-h) 40% 2% / 0.55);
+  transform: translateX(var(--rail-shift));
+  width: calc(100% - var(--rail-shift));
+  transition:
+    transform 0.26s cubic-bezier(0.32, 0.72, 0, 1),
+    width 0s linear 0.26s;
+}
+
+.topbar {
+  position: relative;
+  /* Deliberately unpainted: the header shares the stage's own tint so the panel
+     reads as one surface from the search box down to the last card. */
+  background: none;
+  /* Above .view content: .page is animated, which makes it a stacking context
+     that would otherwise paint over the suggestion panel and eat its clicks. */
+  z-index: 50;
+  /* Three tracks with equal side gutters so the search box lands on the real
+     centre line regardless of how wide the account chip gets. */
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+  padding: 16px 30px;
+  flex: none;
+}
+
+.topbar > .topbar-lead { justify-self: start; }
+.topbar > .omni { justify-self: center; }
+.topbar > .account { justify-self: end; }
+
+.topbar-lead { display: flex; align-items: center; gap: 6px; flex: none; }
+
+.omni {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  /* Resting narrow, stretching out under the cursor or on focus. */
+  width: 340px;
+  max-width: 100%;
+  padding: 6px 6px 6px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: hsl(0 0% 100% / 0.05);
+  backdrop-filter: blur(14px);
+  transition:
+    width 0.36s var(--ease),
+    border-color 0.2s var(--ease),
+    background 0.2s var(--ease),
+    box-shadow 0.2s var(--ease);
+}
+
+.omni:hover,
+.omni:focus-within {
+  width: 620px;
+  background: hsl(0 0% 100% / 0.08);
+}
+
+/* An open suggestion list must not snap shut when the pointer drifts off. */
+.omni:has(.omni-panel:not([hidden])) { width: 620px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .omni { transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease); }
+}
+
+.omni:focus-within {
+  border-color: var(--accent-line);
+  box-shadow: 0 0 0 4px var(--accent-soft);
+}
+
+.omni-ico { width: 17px; height: 17px; color: var(--ink-faint); flex: none; }
+
+.omni input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  background: none;
+  outline: none;
+  padding: 6px 0;
+}
+
+.omni input::placeholder { color: var(--ink-faint); }
+.omni input::-webkit-search-cancel-button { display: none; }
+
+.omni-go {
+  flex: none;
+  padding: 7px 18px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: hsl(var(--accent-h) 60% 8%);
+  font-weight: 650;
+  font-size: 13.5px;
+  transition: filter 0.18s var(--ease), transform 0.18s var(--ease);
+}
+
+.omni-go:hover { filter: brightness(1.12); }
+.omni-go:active { transform: scale(0.97); }
+
+.omni-panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0; right: 0;
+  z-index: 40;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  /* Fully opaque: a translucent panel let the track rows behind it show
+     through, which read as the dropdown being sunk into the page. */
+  background: hsl(var(--accent-h) 22% 8%);
+  box-shadow: 0 24px 70px hsl(0 0% 0% / 0.7), 0 0 0 1px hsl(0 0% 0% / 0.4);
+}
+
+.sugg-group-label {
+  padding: 8px 10px 4px;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.sugg-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 10px;
+  text-align: left;
+  color: var(--ink-dim);
+}
+
+.sugg-item:hover, .sugg-item.is-active { background: var(--panel-strong); color: var(--ink); }
+.sugg-item span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sugg-item i { width: 15px; height: 15px; flex: none; color: var(--ink-faint); }
+.sugg-item.is-active i, .sugg-item:hover i { color: var(--accent); }
+.sugg-name { flex: 0 1 auto; font-weight: 560; }
+.sugg-item .sugg-sub { margin-left: auto; padding-left: 10px; color: var(--ink-faint); font-size: 12.5px; flex: 0 1 auto; }
+
+.sugg-row { display: flex; align-items: center; gap: 2px; }
+.sugg-row .sugg-item { flex: 1 1 auto; min-width: 0; }
+.sugg-row .sugg-play { flex: none; width: 28px; height: 28px; opacity: 0; transition: opacity 0.16s var(--ease); }
+.sugg-row .sugg-play svg { width: 15px; height: 15px; }
+.sugg-row:hover .sugg-play, .sugg-row:focus-within .sugg-play { opacity: 1; }
+.sugg-hint {
+  display: flex;
+  gap: 12px;
+  padding: 8px 10px 4px;
+  margin-top: 4px;
+  border-top: 1px solid var(--line-soft);
+  font-size: 11.5px;
+  color: var(--ink-faint);
+}
+.sugg-hint kbd {
+  padding: 1px 5px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  font-family: inherit;
+  font-size: 10.5px;
+}
+
+.account { flex: none; margin-left: auto; }
+
+.view {
+  /* Above the ambient layer, which is positioned and would otherwise paint over
+     in-flow content. */
+  position: relative;
+  z-index: 1;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 4px 30px 40px;
+  scroll-behavior: smooth;
+}
+
+/* ---------- scrollbars ---------- */
+
+.view::-webkit-scrollbar, .rail::-webkit-scrollbar,
+.omni-panel::-webkit-scrollbar, .lyric-scroll::-webkit-scrollbar,
+.scan-results::-webkit-scrollbar { width: 10px; }
+
+.view::-webkit-scrollbar-thumb, .rail::-webkit-scrollbar-thumb,
+.omni-panel::-webkit-scrollbar-thumb, .lyric-scroll::-webkit-scrollbar-thumb,
+.scan-results::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 99px;
+  background-clip: content-box;
+  background-color: hsl(0 0% 100% / 0.14);
+}
+
+.view::-webkit-scrollbar-thumb:hover { background-color: hsl(0 0% 100% / 0.26); }
+
+@media (max-width: 1080px) {
+  /* Too little room to keep a fixed-width centre track: let it flex again. */
+  .topbar { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .omni,
+  .omni:hover,
+  .omni:focus-within,
+  .omni:has(.omni-panel:not([hidden])) { width: auto; }
+}
+
+@media (max-width: 900px) {
+  /* No room for labels at this width, so the rail is permanently in icon mode
+     and the toggle has nothing left to collapse. */
+  :root { --rail-track: 66px; --rail-w: 66px; --playbar-h: 132px; }
+  html.rail-mini { --rail-w: 66px; }
+  .stage { transform: none; width: 100%; border-radius: 18px 0 0 18px; }
+  .rail { padding: 14px 8px; gap: 14px; }
+  .rail-head { flex-direction: column; align-items: center; gap: 10px; padding-bottom: 12px; }
+  .rail-head .brand { flex: none; padding: 0; justify-content: center; }
+  .brand-text { display: none; }
+  .rail-link { justify-content: center; gap: 0; padding: 12px 0; }
+  .rail-link span { display: none; }
+  .rail-foot { display: none; }
+  #railToggle { display: none; }
+  .topbar { padding: 12px 16px; }
+  .view { padding: 0 16px 32px; }
+}

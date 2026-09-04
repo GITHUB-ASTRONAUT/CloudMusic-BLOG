@@ -1,0 +1,30 @@
+# 依赖与构建产物（本项目零依赖，仅作防御）
+node_modules/
+dist/
+build/
+
+# 日志与临时文件
+*.log
+logs/
+*.tmp
+
+# 凭证：任何形式的 token / 隧道密钥 / 证书都不要提交
+*.token
+token
+.env
+.env.*
+secrets.*
+*.pem
+*.pfx
+*.key
+cert/
+
+# 编辑器与系统垃圾
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+.DS_Store
+
+# 个人面试备稿，不公开
+INTERVIEW.md
