@@ -6,7 +6,9 @@
 
 ## 演示
 
-▶ **[演示视频 · 2 分 16 秒](docs/demo.mp4)**（1280×632，6.4 MB）
+<video src="https://github.com/user-attachments/assets/b42faae0-d193-40dc-9124-e5f07fd3a448" controls></video>
+
+▶ 播放器没加载出来就[点这里在线播放](https://github.com/user-attachments/assets/b42faae0-d193-40dc-9124-e5f07fd3a448)，或[下载仓库内副本](docs/demo.mp4)（1280×632，6.4 MB，2 分 16 秒）
 
 ## 特性
 
